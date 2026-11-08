@@ -16,8 +16,8 @@
     ]
   },
 
-  "_flow_points_note": "Flow (mm3/s) -> temperature (C). Guess from published stock-Ender-3 (MK8) melt data and our own prints: Fast at ~9 mm3/s under-extrudes below ~205 C. Replace with a measured flow test.",
-  "flow_points": [[1.0, 195], [6.0, 205], [10.0, 215]],
+  "_flow_points_note": "Flow (mm3/s) -> temperature (C). 205 C at ~5 mm3/s, the peak flow of a Fast 0.3 mm print that printed well at 205 C (2026-11-08). Other points are guesses; tune with test prints.",
+  "flow_points": [[1.0, 195], [5.0, 205], [10.0, 215]],
   "min_temp": 195,
   "max_temp": 230,
   "hard_max_temp": 240,
