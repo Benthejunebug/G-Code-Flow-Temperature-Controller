@@ -6,29 +6,69 @@
 
 The original is a **Windows desktop app** (Delphi, with a window that pops up after slicing). We want the same thing as a **plain command-line script that runs on Linux, headless**, straight after OrcaSlicer, with no window and nothing to click.
 
-Status: **planning — nothing rewritten yet.** The Windows app and its source are unchanged in this repo.
+Status: **working first version** in [`linux/`](linux/). The Windows app and its source are unchanged in this repo.
 
-## What we're building
+## What it does
 
-A Python script that does what SB53 does, as an OrcaSlicer post-processing step:
+`linux/sb53_linux.py` is a Python script that runs after OrcaSlicer, headless:
 
-1. Run the sliced G-code through [`klipper_estimator`](https://github.com/sb53systems/klipper_estimator) (`dump-moves`, Linux build) to get each move's real time and flow.
-2. Average and smooth the flow over a time window.
-3. Map flow → nozzle temperature with a few points per filament (low / mid / high flow ↔ temperature).
-4. Limit how fast the temperature can rise or fall, so it never asks more than the hotend can follow.
-5. Write `M104` changes into the G-code ahead of when they're needed, and set the starting temperature.
-6. Optional later: speed caps and pressure-advance changes (both are in the original).
+1. Runs the sliced G-code through [`klipper_estimator`](https://github.com/sb53systems/klipper_estimator) (`dump-moves`) to get each move's real time and flow, acceleration and cornering included.
+2. Works out the flow for each second of the print (a blend of average and peak) and smooths it.
+3. Maps flow → nozzle temperature using a few points you set per filament (e.g. 1 mm³/s → 195 °C, 6 → 205, 10 → 215).
+4. Plans the temperature so it never changes faster than your hotend can heat or cool. Rises are planned **backwards**, so heating starts early enough to be at temperature when a fast section begins. (The original only limited rises going forwards, so the temperature lagged behind the flow.)
+5. Writes `M104` changes into the G-code at the right spots and removes the slicer's own body-temperature `M104` lines.
 
-Goals:
-- **Linux, headless:** runs from the command line or as an OrcaSlicer post-processing script, no GUI.
-- **Our printer's settings:** values for our machine, not the original author's.
-- **Easy to check:** a report and graph of the planned temperatures, so a slice can be reviewed before printing.
+It doesn't touch first-layer temperatures (including the first layer of later objects in sequential prints), or the start and end G-code. It refuses to write if the estimator's filament total doesn't match the G-code's within 2%, if a planned temperature is outside your limits, or if the file was already processed.
+
+Not ported yet: the original's optional speed limiting and pressure-advance changes.
+
+## Setup
+
+```bash
+# 1. Build klipper_estimator (SB53's fork, Rust)
+git clone https://github.com/sb53systems/klipper_estimator.git
+cd klipper_estimator && cargo build --release
+# binary: target/release/klipper_estimator  (put it on PATH, or pass --estimator)
+
+# 2. Run on a sliced file
+python3 linux/sb53_linux.py --config linux/configs/longer-lk5-pro_mk8_0.3_pla.json \
+    print.gcode -o print_sb53.gcode --report plan.json --plot plan.png
+```
+
+Without `-o` it edits the file in place. `--dry-run` only plans and reports. `--plot` needs matplotlib.
+
+**OrcaSlicer:** Printer/Process → Others → Post-processing scripts:
+
+```
+/usr/bin/python3 /path/to/linux/sb53_linux.py --config /path/to/linux/configs/YOUR_CONFIG.json --estimator /path/to/klipper_estimator;
+```
+
+OrcaSlicer adds the G-code path at the end.
+
+## Config
+
+One JSON file per printer + hotend + filament ([example](linux/configs/longer-lk5-pro_mk8_0.3_pla.json)):
+
+- `machine` — your printer's motion limits for the estimator (from `printer.cfg`: max velocity/accel, square corner velocity, extruder limits).
+- `flow_points` — `[flow mm³/s, temperature °C]` pairs; straight lines between them, flat beyond the ends.
+- `min_temp`, `max_temp` — limits for planned temperatures. `hard_max_temp` — the script refuses a config whose `max_temp` is above this (e.g. a PTFE-lined hotend).
+- `rise_c_per_s`, `fall_c_per_s` — how fast the hotend can really heat and cool *while printing*.
+- `peak_weight` (0 = average flow per second, 1 = peak), `smooth_s` (smoothing window), `lead_s` (extra lead for heater lag), `step_c`, `min_change_c` (skip changes smaller than this).
 
 ## Target printer
 
 - Longer LK5 Pro, Klipper, Bowden.
 - Stock **MK8-style hotend** (PTFE tube down to the nozzle, heater cartridge in an aluminum block), **0.3 mm nozzle**, PLA.
 - The original isn't tuned for any particular hotend; it's configured per printer and filament. This hotend heats and cools slowly and has a PTFE temperature ceiling (keep ≤ 240 °C), so the main changes are the flow/temperature points and slower heat-up / cool-down limits.
+- The included config ([`longer-lk5-pro_mk8_0.3_pla.json`](linux/configs/longer-lk5-pro_mk8_0.3_pla.json)) uses the printer's real motion limits and heat-up / cool-down rates measured from its Klipper log (about 0.7 °C/s heating at full power, 0.35 °C/s cooling). The flow → temperature points are a **starting guess** and need test prints to tune.
+
+## Tested so far
+
+On two real sliced files for this printer (a 2.5 h single part and a 3.3 h two-part sequential print):
+- Estimator and G-code filament totals matched exactly.
+- First-layer temperatures, start and end G-code untouched (checked every first-layer extrusion move, including the second object's first layer).
+- 113–143 temperature changes per print, all within the configured limits.
+- Not yet printed.
 
 ---
 
