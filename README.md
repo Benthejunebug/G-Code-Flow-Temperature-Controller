@@ -1,3 +1,37 @@
+# G-Code Flow & Temperature Controller — Linux / headless fork
+
+> **This is a fork of [sb53systems/G-Code-Flow-Temperature-Controller](https://github.com/sb53systems/G-Code-Flow-Temperature-Controller)** by BELAYEL Salim (MIT). All credit for the idea and the method goes to the original project. The original README is kept below, unchanged.
+
+## Why this fork
+
+The original is a **Windows desktop app** (Delphi, with a window that pops up after slicing). We want the same thing as a **plain command-line script that runs on Linux, headless**, straight after OrcaSlicer, with no window and nothing to click.
+
+Status: **planning — nothing rewritten yet.** The Windows app and its source are unchanged in this repo.
+
+## What we're building
+
+A Python script that does what SB53 does, as an OrcaSlicer post-processing step:
+
+1. Run the sliced G-code through [`klipper_estimator`](https://github.com/sb53systems/klipper_estimator) (`dump-moves`, Linux build) to get each move's real time and flow.
+2. Average and smooth the flow over a time window.
+3. Map flow → nozzle temperature with a few points per filament (low / mid / high flow ↔ temperature).
+4. Limit how fast the temperature can rise or fall, so it never asks more than the hotend can follow.
+5. Write `M104` changes into the G-code ahead of when they're needed, and set the starting temperature.
+6. Optional later: speed caps and pressure-advance changes (both are in the original).
+
+Goals:
+- **Linux, headless:** runs from the command line or as an OrcaSlicer post-processing script, no GUI.
+- **Our printer's settings:** values for our machine, not the original author's.
+- **Easy to check:** a report and graph of the planned temperatures, so a slice can be reviewed before printing.
+
+## Target printer
+
+- Longer LK5 Pro, Klipper, Bowden.
+- Stock **MK8-style hotend** (PTFE tube down to the nozzle, heater cartridge in an aluminum block), **0.3 mm nozzle**, PLA.
+- The original isn't tuned for any particular hotend; it's configured per printer and filament. This hotend heats and cools slowly and has a PTFE temperature ceiling (keep ≤ 240 °C), so the main changes are the flow/temperature points and slower heat-up / cool-down limits.
+
+---
+
 ![image](https://github.com/user-attachments/assets/b5b84ecc-84e5-4583-97c8-efdcdf985504)  
 # G-Code Flow & Temperature Controller
 
