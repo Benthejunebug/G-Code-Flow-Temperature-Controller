@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SB53-Linux: flow-based nozzle temperature for sliced G-code (headless).
+"""G-Code Flow Temperature Controller (SB53, Linux): flow-based nozzle temperature for sliced G-code (headless).
 
 A Linux / command-line port of the method used by the SB53 G-Code Flow &
 Temperature Controller (https://github.com/sb53systems/G-Code-Flow-Temperature-Controller,
@@ -42,7 +42,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 VERSION = "0.1.0"
-MARKER = "; Edited by SB53-Linux"
+MARKER = "; Edited by G-Code Flow Temperature Controller (SB53, Linux)"
+OLD_MARKERS = ("; Edited by SB53-Linux",)
+TAG = "; Flow Temp Controller"
 FILAMENT_AREA = math.pi * (1.75 / 2) ** 2  # mm^2, 1.75 mm filament
 
 
@@ -256,7 +258,7 @@ def rewrite(lines, cum, temps, first_layer_z):
             if val == 0:
                 done = True                      # end G-code: leave it alone
             elif not upcoming_first[idx]:
-                out.append("; SB53-Linux removed slicer temp: " + ln.rstrip("\n") + "\n")
+                out.append(TAG + " removed slicer temp: " + ln.rstrip("\n") + "\n")
                 neutralised += 1
                 continue
             else:
@@ -281,7 +283,7 @@ def rewrite(lines, cum, temps, first_layer_z):
                         i = min(bisect.bisect_left(cum, used), n - 1)
                         target = temps[i]
                         if current is None or abs(target - current) >= 1e-9:
-                            out.append(f"M104 S{target:g} ; SB53-Linux\n")
+                            out.append(f"M104 S{target:g} {TAG}\n")
                             inserted += 1
                             if first_inserted_at is None:
                                 first_inserted_at = cur_z
@@ -325,8 +327,8 @@ def main(argv=None):
     if a.estimator:
         cfg.estimator = a.estimator
     src = a.gcode.read_text()
-    if MARKER in src:
-        raise SystemExit("already edited by SB53-Linux; re-slice first")
+    if MARKER in src or any(m in src for m in OLD_MARKERS):
+        raise SystemExit("already edited by the flow temperature controller; re-slice first")
     lines = src.splitlines(keepends=True)
     fl_z = first_layer_height(lines)
 
@@ -343,7 +345,7 @@ def main(argv=None):
     if mismatch > 0.02:
         raise SystemExit(f"filament mismatch estimator {est_fil:.1f} mm vs g-code {gc_fil:.1f} mm "
                          f"({mismatch:.1%}); refusing to write")
-    inserted = [float(S_RE.search(l).group(1)) for l in new_lines if l.endswith("; SB53-Linux\n")]
+    inserted = [float(S_RE.search(l).group(1)) for l in new_lines if l.endswith(TAG + "\n")]
     if any(t < cfg.min_temp or t > cfg.max_temp for t in inserted):
         raise SystemExit("internal error: planned temperature outside limits")
 
@@ -374,7 +376,7 @@ def main(argv=None):
             ax2.plot(x, temps, lw=1.2, color="tab:red", label="planned temp")
             ax2.set_ylabel("°C")
             fig.legend(loc="upper right")
-            ax.set_title(f"SB53-Linux plan: {a.gcode.name}")
+            ax.set_title(f"Flow temperature plan: {a.gcode.name}")
             fig.tight_layout(); fig.savefig(a.plot, dpi=110)
         except ImportError:
             print("matplotlib not installed; skipping plot", file=sys.stderr)
