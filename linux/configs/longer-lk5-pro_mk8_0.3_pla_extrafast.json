@@ -1,0 +1,58 @@
+{
+  "_about": "Longer LK5 Pro, stock MK8-style Bowden hotend, 0.3 mm nozzle, PLA, Extra Fast speed tier (250/300 mm/s, accel 2500). Same as the base config, hotter at peak flow.",
+  "estimator": "klipper_estimator",
+  "machine": {
+    "_source": "live printer.cfg values (Klipper configfile query, 2026-11-08)",
+    "max_velocity": 300.0,
+    "max_acceleration": 2500.0,
+    "minimum_cruise_ratio": 0.5,
+    "square_corner_velocity": 3.0,
+    "instant_corner_velocity": 1.0,
+    "mm_per_arc_segment": 0.1,
+    "move_checkers": [
+      {
+        "axis_limiter": {
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "max_velocity": 10.0,
+          "max_accel": 500.0
+        }
+      },
+      {
+        "extruder_limiter": {
+          "max_velocity": 44.9,
+          "max_accel": 374.2
+        }
+      }
+    ]
+  },
+  "_flow_points_note": "210 C at ~5 mm3/s (peak flow): an Extra Fast cap at 205 C peak showed slight under-extrusion (2026-11-08). Rest of the print stays ~198-200 C.",
+  "flow_points": [
+    [
+      1.0,
+      195
+    ],
+    [
+      5.0,
+      210
+    ],
+    [
+      10.0,
+      220
+    ]
+  ],
+  "min_temp": 195,
+  "max_temp": 230,
+  "hard_max_temp": 240,
+  "_rates_note": "From klippy.log: full-power heating ~0.7 C/s and heater-off cooling ~0.35 C/s near 190-210 C. While printing the heater already runs ~74% (peaks 98%), so usable extra heating is much lower.",
+  "rise_c_per_s": 0.25,
+  "fall_c_per_s": 0.3,
+  "peak_weight": 0.3,
+  "smooth_s": 5,
+  "lead_s": 2,
+  "step_c": 1,
+  "min_change_c": 2
+}
