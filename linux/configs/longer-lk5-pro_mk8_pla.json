@@ -1,5 +1,6 @@
 {
-  "_about": "Longer LK5 Pro on Klipper, stock MK8-style Bowden hotend (PTFE to the nozzle), 0.3 mm nozzle, PLA. Starting values, not yet tuned by test prints.",
+  "_about": "Longer LK5 Pro on Klipper, stock MK8-style Bowden hotend (PTFE to the nozzle), PLA. One config per material, all speed tiers. Tuned on a 0.3 mm nozzle; other nozzle sizes untested.",
+  "filament_type": "PLA",
   "estimator": "klipper_estimator",
   "machine": {
     "_source": "live printer.cfg values (Klipper configfile query, 2026-11-08)",

@@ -31,7 +31,7 @@ cd klipper_estimator && cargo build --release
 # binary: target/release/klipper_estimator  (put it on PATH, or pass --estimator)
 
 # 2. Run on a sliced file
-python3 linux/sb53_linux.py --config linux/configs/longer-lk5-pro_mk8_0.3_pla.json \
+python3 linux/sb53_linux.py --config linux/configs/longer-lk5-pro_mk8_pla.json \
     print.gcode -o print_sb53.gcode --report plan.json --plot plan.png
 ```
 
@@ -47,7 +47,7 @@ OrcaSlicer adds the G-code path at the end.
 
 ## Config
 
-One JSON file per printer + hotend + filament ([example](linux/configs/longer-lk5-pro_mk8_0.3_pla.json)):
+One JSON file per printer + hotend + material (`filament_type` is required; the script refuses a slice whose `; filament_type =` doesn't match, or has none) ([example](linux/configs/longer-lk5-pro_mk8_pla.json)):
 
 - `machine` — your printer's motion limits for the estimator (from `printer.cfg`: max velocity/accel, square corner velocity, extruder limits).
 - `flow_points` — `[flow mm³/s, temperature °C]` pairs; straight lines between them, flat beyond the ends.
@@ -60,7 +60,7 @@ One JSON file per printer + hotend + filament ([example](linux/configs/longer-lk
 - Longer LK5 Pro, Klipper, Bowden.
 - Stock **MK8-style hotend** (PTFE tube down to the nozzle, heater cartridge in an aluminum block), **0.3 mm nozzle**, PLA.
 - The original isn't tuned for any particular hotend; it's configured per printer and filament. This hotend heats and cools slowly and has a PTFE temperature ceiling (keep ≤ 240 °C), so the main changes are the flow/temperature points and slower heat-up / cool-down limits.
-- The included config ([`longer-lk5-pro_mk8_0.3_pla.json`](linux/configs/longer-lk5-pro_mk8_0.3_pla.json)) uses the printer's real motion limits and heat-up / cool-down rates measured from its Klipper log (about 0.7 °C/s heating at full power, 0.35 °C/s cooling). The flow → temperature points are a **starting guess** and need test prints to tune.
+- The included config ([`longer-lk5-pro_mk8_pla.json`](linux/configs/longer-lk5-pro_mk8_pla.json)) uses the printer's real motion limits and heat-up / cool-down rates measured from its Klipper log (about 0.7 °C/s heating at full power, 0.35 °C/s cooling). The flow → temperature points are a **starting guess** and need test prints to tune.
 
 ## Tested so far
 

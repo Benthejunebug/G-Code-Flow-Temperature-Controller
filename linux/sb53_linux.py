@@ -57,6 +57,7 @@ class Config:
     min_temp: float
     max_temp: float
     hard_max_temp: float               # refuse configs above this (hotend safety)
+    filament_type: str                 # material this config is tuned for (e.g. "PLA"); must match the slice
     rise_c_per_s: float                # how fast the hotend can heat while printing
     fall_c_per_s: float                # how fast it cools
     peak_weight: float = 0.3           # 0 = average flow per second, 1 = peak flow
@@ -79,7 +80,21 @@ class Config:
             raise SystemExit(f"config: max_temp {cfg.max_temp} is above hard_max_temp {cfg.hard_max_temp}")
         if not (cfg.rise_c_per_s > 0 and cfg.fall_c_per_s > 0):
             raise SystemExit("config: rise/fall rates must be > 0")
+        if not str(cfg.filament_type).strip():
+            raise SystemExit("config: filament_type is required (one config per material)")
         return cfg
+
+
+def check_material(cfg: "Config", src: str) -> None:
+    """Refuse a slice whose filament type doesn't match the config (temperatures are per material)."""
+    m = re.search(r"^; filament_type = (.+)$", src, re.M)
+    if not m:
+        raise SystemExit("slice has no '; filament_type =' line; can't confirm the material, refusing")
+    types = {s.strip().upper() for s in m.group(1).split(";") if s.strip()}
+    want = cfg.filament_type.strip().upper()
+    if types != {want}:
+        raise SystemExit(f"material mismatch: slice is {'/'.join(sorted(types))}, config is for {want}; "
+                         f"use a config made for that material")
 
 
 def temp_for_flow(cfg: Config, flow: float) -> float:
@@ -329,6 +344,7 @@ def main(argv=None):
     src = a.gcode.read_text()
     if MARKER in src or any(m in src for m in OLD_MARKERS):
         raise SystemExit("already edited by the flow temperature controller; re-slice first")
+    check_material(cfg, src)
     lines = src.splitlines(keepends=True)
     fl_z = first_layer_height(lines)
 
